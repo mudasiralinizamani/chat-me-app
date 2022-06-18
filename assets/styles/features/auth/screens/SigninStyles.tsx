@@ -28,6 +28,11 @@ const SigninStyles = StyleSheet.create({
     width: "100%",
     paddingHorizontal: 8,
   },
+  error: {
+    textAlign: "left",
+    width: "100%",
+    marginTop: 5,
+  },
 });
 
 export default SigninStyles;
