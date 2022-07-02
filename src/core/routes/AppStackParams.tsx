@@ -1,6 +1,5 @@
 type AppStackParams = {
-  Signin;
-  Signup;
+  Home;
 };
 
 export default AppStackParams;

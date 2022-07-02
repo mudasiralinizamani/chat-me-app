@@ -8,8 +8,8 @@ const SigninStyles = StyleSheet.create({
     paddingTop: 50,
   },
   logo: {
-    height: 150,
-    width: 150,
+    height: 120,
+    width: 120,
     resizeMode: "cover",
   },
   header: {

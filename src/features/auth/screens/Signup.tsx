@@ -2,18 +2,18 @@ import { ScrollView, Image, Text, TouchableOpacity } from "react-native";
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import styles from "../../../../assets/styles/features/auth/screens/SigninStyles";
-import {
-  Button,
-  Colors,
-  Paragraph,
-  TextInput,
-} from "react-native-paper";
+import { Button, Colors, Paragraph, TextInput } from "react-native-paper";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import AuthStackParams from "../../../core/routes/AuthStackParams";
-import ISignup from "../../../core/Interfaces/ISignup";
+import AuthStackParams from "src/core/routes/AuthStackParams";
+import ISignupScheme from "../interfaces/ISignupScheme.interface";
 import * as yup from "yup";
 import { Formik } from "formik";
 import FieldError from "../components/FieldError";
+import { StackActions } from "@react-navigation/native";
+import { AxiosError } from "axios";
+import Toast from "react-native-toast-message";
+import authService from "../../../core/server/services/authService";
+import ISignup from "../interfaces/ISignup.interface";
 
 type Props = NativeStackScreenProps<AuthStackParams, "Signup">;
 
@@ -39,18 +39,55 @@ const validationSchema = yup.object().shape({
 
 function Signup({ navigation }: Props) {
   const [hidePassword, setHidePassword] = useState<boolean>(true);
-  const initialValues: ISignup = {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const initialValues: ISignupScheme = {
     email: "",
     fullName: "",
     password: "",
     confirmPassword: "",
   };
 
+  const submit = (model: ISignupScheme) => {
+    setIsLoading(true);
+    const dto: ISignup = {
+      email: model.email,
+      full_name: model.fullName,
+      password: model.confirmPassword,
+      profile_pic: "",
+    };
+    authService
+      .signup(dto)
+      .then((res) => {
+        if (res.status === 200) {
+          Toast.show({
+            text1: "Account Successfully Created",
+            text2: "Your account is successfully created",
+          });
+          setIsLoading(false);
+          return navigation.dispatch(StackActions.replace("Signin"));
+        }
+      })
+      .catch((err: AxiosError) => {
+        setIsLoading(false);
+        if (err.response?.data.code === "EmailAlreadyExist") {
+          return Toast.show({
+            text1: "Email Already Exists",
+            type: "error",
+            text2: "This Email address already exists",
+          });
+        }
+        return Toast.show({
+          text1: "Something Went Wrong",
+          type: "error",
+        });
+      });
+  };
+
   return (
     <Formik
       validateOnMount={true}
       initialValues={initialValues}
-      onSubmit={(values) => console.log(values)}
+      onSubmit={(values) => submit(values)}
       validationSchema={validationSchema}
     >
       {({
@@ -65,7 +102,7 @@ function Signup({ navigation }: Props) {
         <SafeAreaView>
           <ScrollView contentContainerStyle={styles.container}>
             <Image
-              source={require("../../../../assets/images/rn-social-logo.png")}
+              source={require("../../../../assets/images/chatme.png")}
               style={styles.logo}
             />
             <Text style={styles.header}>Chat Me</Text>
@@ -90,14 +127,29 @@ function Signup({ navigation }: Props) {
               mode="outlined"
               left={<TextInput.Icon name="email" />}
               style={styles.textInput}
+              textContentType="emailAddress"
               onChangeText={handleChange("email")}
               onBlur={handleBlur("email")}
               value={values.email}
-              error={touched.email && errors.email ? true : false}
+              error={
+                (touched.email && errors.email) ||
+                (touched.emailAlreadyExists && errors.emailAlreadyExists)
+                  ? true
+                  : false
+              }
             />
             <FieldError
-              visible={touched.email && errors.email ? true : false}
-              message={errors.email}
+              visible={
+                (touched.email && errors.email) ||
+                (touched.emailAlreadyExists && errors.emailAlreadyExists)
+                  ? true
+                  : false
+              }
+              message={
+                touched.emailAlreadyExists && errors.emailAlreadyExists
+                  ? errors.emailAlreadyExists
+                  : errors.email
+              }
             />
 
             <TextInput
@@ -154,6 +206,7 @@ function Signup({ navigation }: Props) {
               disabled={!isValid}
               onPress={handleSubmit}
               style={styles.button}
+              loading={isLoading}
             >
               Sign Up
             </Button>

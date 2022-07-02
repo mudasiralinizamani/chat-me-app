@@ -1,6 +1,6 @@
 export default interface ISignup {
-  fullName: string;
+  full_name: string;
   email: string;
+  profile_pic: string;
   password: string;
-  confirmPassword: string;
 }

@@ -1,18 +1,20 @@
 import React from "react";
-import MainRoutes from "./src/core/routes/MainRoutes";
 import {
   Colors,
   DefaultTheme,
   Provider as PaperProvider,
 } from "react-native-paper";
+import Toast from "react-native-toast-message";
+import "react-native-gesture-handler";
+import Router from "./src/core/routes/Router";
 
 const theme = {
   ...DefaultTheme,
   roundness: 8,
   colors: {
     ...DefaultTheme.colors,
-    primary: "#FEDBD0",
-    accent: "#442C2E",
+    primary: "#6200EE",
+    accent: "#3700B3",
     text: Colors.grey600,
   },
 };
@@ -20,7 +22,8 @@ const theme = {
 export default function App() {
   return (
     <PaperProvider theme={theme}>
-      <MainRoutes />
+      <Router />
+      <Toast visibilityTime={5000} topOffset={45} />
     </PaperProvider>
   );
 }

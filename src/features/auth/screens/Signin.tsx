@@ -4,11 +4,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import styles from "../../../../assets/styles/features/auth/screens/SigninStyles";
 import { Button, Colors, Paragraph, TextInput } from "react-native-paper";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import AuthStackParams from "../../../core/routes/AuthStackParams";
+import AuthStackParams from "src/core/routes/AuthStackParams";
 import * as yup from "yup";
-import { ISingin } from "../../../core/Interfaces/ISignin";
+import { ISingin } from "../interfaces/ISignin.interface";
 import FieldError from "../components/FieldError";
 import { Formik } from "formik";
+import authService from "../../../core/server/services/authService";
+import { AxiosError } from "axios";
+import Toast from "react-native-toast-message";
+import authHelper from "../../../core/helpers/authHelper";
+import { EventRegister } from 'react-native-event-listeners'
+
 
 type Props = NativeStackScreenProps<AuthStackParams, "Signin">;
 
@@ -22,16 +28,53 @@ const validationSchema = yup.object().shape({
 
 const Signin = ({ navigation }: Props) => {
   const [hidePassword, setHidePassword] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const initialValues: ISingin = {
     email: "",
     password: "",
+  };
+
+  const submit = (model: ISingin) => {
+    setIsLoading(true);
+    authService
+      .signin(model)
+      .then((res) => {
+        setIsLoading(false);
+        console.log(res.data);
+        authHelper.saveUser(res.data?.user);
+        Toast.show({
+          text1: "Successfully Signed In",
+          text2: "You are Successfully Signed In",
+        });
+        return EventRegister.emit("iseUserAuthenticated", true)
+      })
+      .catch((err: AxiosError) => {
+        setIsLoading(false);
+        if (err.response.data.code === "EmailNotFound") {
+          return Toast.show({
+            text1: "Email Not Found",
+            type: "error",
+            text2: "This Email address does not exist",
+          });
+        } else if (err.response?.data.code === "IncorrectPassword") {
+          return Toast.show({
+            text1: "Incorrect Password",
+            type: "error",
+            text2: "This Password is Incorrect",
+          });
+        }
+        return Toast.show({
+          text1: "Something Went Wrong",
+          type: "error",
+        });
+      });
   };
 
   return (
     <Formik
       validateOnMount={true}
       initialValues={initialValues}
-      onSubmit={(values) => console.log(values)}
+      onSubmit={(values) => submit(values)}
       validationSchema={validationSchema}
     >
       {({
@@ -46,7 +89,7 @@ const Signin = ({ navigation }: Props) => {
         <SafeAreaView>
           <ScrollView contentContainerStyle={styles.container}>
             <Image
-              source={require("../../../../assets/images/rn-social-logo.png")}
+              source={require("../../../../assets/images/chatme.png")}
               style={styles.logo}
             />
             <Text style={styles.header}>Chat Me</Text>
@@ -58,6 +101,7 @@ const Signin = ({ navigation }: Props) => {
               style={styles.textInput}
               onChangeText={handleChange("email")}
               onBlur={handleBlur("email")}
+              textContentType="emailAddress"
               value={values.email}
               error={touched.email && errors.email ? true : false}
             />
@@ -93,6 +137,7 @@ const Signin = ({ navigation }: Props) => {
               mode="contained"
               disabled={!isValid}
               onPress={handleSubmit}
+              loading={isLoading}
               style={styles.button}
             >
               Sign In
